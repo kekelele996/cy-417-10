@@ -1,5 +1,6 @@
 import { defineStore } from 'pinia';
 import type { DayPlan, DayPlanItem } from '../models/dayPlan';
+import type { TripTemplate } from '../models/tripTemplate';
 import { dayPlanApi } from '../api/dayPlanApi';
 import { messages } from '../constants/messages';
 import { toast } from '../utils/message';
@@ -26,6 +27,20 @@ export const useDayPlanStore = defineStore('dayPlan', {
       const day = this.ensureDay(tripId, dayIndex);
       const [moved] = day.items.splice(from, 1);
       if (moved) day.items.splice(to, 0, moved);
+      dayPlanApi.save(this.dayPlans);
+    },
+    importFromTemplate(tripId: string, template: TripTemplate, startDate: string) {
+      for (const tplDay of template.day_plans) {
+        const date = new Date(new Date(startDate).getTime() + 86400000 * (tplDay.day_index - 1)).toISOString().slice(0, 10);
+        const day: DayPlan = {
+          id: crypto.randomUUID(),
+          trip_id: tripId,
+          day_index: tplDay.day_index,
+          date,
+          items: tplDay.items.map((it) => ({ ...it })),
+        };
+        this.dayPlans.push(day);
+      }
       dayPlanApi.save(this.dayPlans);
     },
   },
